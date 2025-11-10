@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/a-h/templ"
@@ -49,7 +50,14 @@ func InitServer(port int, db *database.DatabaseInst) *Server {
 }
 
 func (s *Server) HandleRoot(c *fiber.Ctx) error {
-	return s.Render(c, templates.HelloWorld())
+
+	data, err := s.db.GetLeaderboard("2024")
+	if err != nil {
+		log.Println(err)
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return s.Render(c, templates.AOCLeaderboard(data, 25))
 }
 
 func (s *Server) Render(c *fiber.Ctx, component templ.Component) error {

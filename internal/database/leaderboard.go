@@ -16,7 +16,7 @@ func (d *DatabaseInst) GetLeaderboard(year string) (types.AOCData, error) {
 
 	data := types.AOCData{}
 
-	rows, err := d.db.Query("SELECT year, user_id, score, day_completions FROM leaderboard_entry WHERE year = ?", year)
+	rows, err := d.db.Query("SELECT year, user_id, aoc_user.name, score, day_completions FROM leaderboard_entry LEFT JOIN aoc_user ON aoc_id = user_id WHERE year = ?", year)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (d *DatabaseInst) GetLeaderboard(year string) (types.AOCData, error) {
 		}
 		var completions string
 
-		err = rows.Scan(&entry.Year, &entry.UserId, &entry.Score, &completions)
+		err = rows.Scan(&entry.Year, &entry.UserId, &entry.Name, &entry.Score, &completions)
 
 		if err != nil {
 			return nil, err

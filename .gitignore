@@ -4,3 +4,4 @@ data.sqlite3
 *_templ.go
 tailwindcss
 internal/web/assets/css/tailwind.css
+.tmp

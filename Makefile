@@ -2,7 +2,7 @@
 watch: air-install
 	go tool air
 
-build: templ_generate
+build: templ_generate css
 	@export CGO_ENABLED=1
 	go build -v -o ./.dist/ ./cmd/aoclb/
 

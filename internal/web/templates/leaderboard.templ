@@ -1,0 +1,53 @@
+package templates
+
+import (
+	"slices"
+	"uocsclub.net/aoclb/internal/types"
+)
+
+templ AOCLeaderboard(data types.AOCData, daycount int) {
+	<div>
+		{{
+			entries := make([]*types.AOCUserLB, 0, len(data))
+			for _, entry := range data {
+				entries = append(entries, entry)
+			}
+
+			slices.SortFunc(entries, func(a, b *types.AOCUserLB) int {
+				return b.Score - a.Score
+			})
+		}}
+		for idx, entry := range entries {
+			@AOCLeaderboardEntry(entry, idx, daycount)
+		}
+	</div>
+}
+
+templ AOCLeaderboardEntry(entry *types.AOCUserLB, idx int, daycount int) {
+	<div>
+		<span class="w-[1rem] text-left inline-block pr-1">{ idx })</span>
+		<span class="w-[4rem] text-right inline-block pr-1">{ entry.Score }</span>
+		for i := 1; i<= daycount; i++ {
+			<span
+				if c := entry.Completions[i]; c != nil {
+					if c.Star2 {
+						class="text-[#ffff66]"
+					}
+					else
+					if c.Star1 {
+						class="text-[#9999cc]"
+					}
+				} else {
+					class="text-[#333333]"
+				}
+			>*</span>
+		}
+		<span>
+			if len(entry.Name) == 0 {
+				(anonymous user #{ entry.UserId })
+			} else {
+				{ entry.Name }
+			}
+		</span>
+	</div>
+}
