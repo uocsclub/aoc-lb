@@ -70,7 +70,7 @@ func main() {
 	defer s.Shutdown()
 	j.RunNow() // durationjob doesn't run on startup
 
-	web.InitServer(7070, db)
+	web.InitServer(7071, db)
 
 	log.Println("Started!")
 
