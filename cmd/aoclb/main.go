@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-co-op/gocron/v2"
 	dotenv "github.com/joho/godotenv"
+	"uocsclub.net/aoclb/internal/database"
 )
 
 func main() {
@@ -24,9 +25,15 @@ func main() {
 		log.Fatalln("Failed to start scheduler")
 	}
 
+	db, err := database.InitDatabase("./data.sqlite3", "./migrations")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
 	j, err := s.NewJob(
 		gocron.DurationJob(time.Minute/2),
-		gocron.NewTask(func() {
+		gocron.NewTask(func(db *database.DatabaseInst) {
 			fetcherConfig := fetcher.AOCFetcherConfig{
 				SessionCookie: os.Getenv("SESSION_ID"),
 				LeaderboardId: os.Getenv("LEADERBOARD_ID"),
@@ -39,14 +46,28 @@ func main() {
 				log.Println(err)
 			}
 
+			_, err = db.StoreLeaderboard(data)
+			if err != nil {
+				log.Println(err)
+			}
+
+			data, err = db.GetLeaderboard(fetcherConfig.Year)
+			if err != nil {
+				log.Println(err)
+			}
+
 			s, _ := json.MarshalIndent(data, "", " ")
 			log.Println(string(s))
 		},
+			db,
 		),
 	)
 
 	s.Start()
+	defer s.Shutdown()
 	j.RunNow() // durationjob doesn't run on startup
+
+	log.Println("Started!")
 
 	for true {
 	}
