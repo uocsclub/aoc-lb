@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"uocsclub.net/aoclb/internal/fetcher"
+	"uocsclub.net/aoclb/internal/web"
 
 	"github.com/go-co-op/gocron/v2"
 	dotenv "github.com/joho/godotenv"
@@ -34,6 +35,8 @@ func main() {
 	j, err := s.NewJob(
 		gocron.DurationJob(time.Minute/2),
 		gocron.NewTask(func(db *database.DatabaseInst) {
+			return // disable fetching for now
+
 			fetcherConfig := fetcher.AOCFetcherConfig{
 				SessionCookie: os.Getenv("SESSION_ID"),
 				LeaderboardId: os.Getenv("LEADERBOARD_ID"),
@@ -66,6 +69,8 @@ func main() {
 	s.Start()
 	defer s.Shutdown()
 	j.RunNow() // durationjob doesn't run on startup
+
+	web.InitServer(7070, db)
 
 	log.Println("Started!")
 

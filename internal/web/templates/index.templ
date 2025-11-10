@@ -1,0 +1,16 @@
+package templates
+
+templ Index(body templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<title>Advent of code leaderboard</title>
+			<script src="assets/js/htmx.min.js"> </script>
+			<link href="assets/css/tailwind.css" rel="stylesheet"/>
+		</head>
+		<body>
+			@body
+		</body>
+	</html>
+}
