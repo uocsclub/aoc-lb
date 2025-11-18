@@ -3,9 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 	"time"
-
-	"encoding/json"
 
 	"uocsclub.net/aoclb/internal/fetcher"
 	"uocsclub.net/aoclb/internal/web"
@@ -35,7 +34,7 @@ func main() {
 	j, err := s.NewJob(
 		gocron.DurationJob(time.Minute/2),
 		gocron.NewTask(func(db *database.DatabaseInst) {
-			return // disable fetching for now
+			// return // disable fetching for now
 
 			fetcherConfig := fetcher.AOCFetcherConfig{
 				SessionCookie: os.Getenv("SESSION_ID"),
@@ -53,14 +52,6 @@ func main() {
 			if err != nil {
 				log.Println(err)
 			}
-
-			data, err = db.GetLeaderboard(fetcherConfig.Year)
-			if err != nil {
-				log.Println(err)
-			}
-
-			s, _ := json.MarshalIndent(data, "", " ")
-			log.Println(string(s))
 		},
 			db,
 		),
@@ -70,7 +61,20 @@ func main() {
 	defer s.Shutdown()
 	j.RunNow() // durationjob doesn't run on startup
 
-	web.InitServer(7071, db)
+	port := os.Getenv("SERVER_PORT")
+	if len(port) == 0 {
+		port = "7071"
+	}
+	iport, err := strconv.Atoi(port)
+	if err != nil {
+		log.Println("Failed to parse SERVER_PORT env variable")
+	}
+
+	web.InitServer(web.ServerConfig{
+		Port:                    iport,
+		OAuth2GithubClientId:    os.Getenv("GITHUB_OAUTH_ID"),
+		OAuth2GithubRedirectURI: os.Getenv("GITHUB_OAUTH_REDIRECT_URI"),
+	}, db)
 
 	log.Println("Started!")
 

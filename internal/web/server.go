@@ -14,14 +14,22 @@ import (
 )
 
 type Server struct {
-	App *fiber.App
-	db  *database.DatabaseInst
+	App    *fiber.App
+	db     *database.DatabaseInst
+	config ServerConfig
 }
 
-func InitServer(port int, db *database.DatabaseInst) *Server {
+type ServerConfig struct {
+	Port                    int
+	OAuth2GithubClientId    string
+	OAuth2GithubRedirectURI string
+}
+
+func InitServer(config ServerConfig, db *database.DatabaseInst) *Server {
 	s := &Server{
-		App: fiber.New(),
-		db:  db,
+		App:    fiber.New(),
+		db:     db,
+		config: config,
 	}
 
 	s.App.Use(cors.New(cors.Config{
@@ -45,7 +53,7 @@ func InitServer(port int, db *database.DatabaseInst) *Server {
 
 	s.App.Use("/", s.HandleRoot)
 
-	s.App.Listen(fmt.Sprintf(":%d", port))
+	s.App.Listen(fmt.Sprintf(":%d", s.config.Port))
 	return s
 }
 
@@ -57,7 +65,11 @@ func (s *Server) HandleRoot(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
-	return s.Render(c, templates.AOCLeaderboard(data, 25))
+	return s.Render(c, templates.LandingPage(
+		templates.GithubLogin(s.config.OAuth2GithubClientId, s.config.OAuth2GithubRedirectURI),
+		data,
+		25,
+	))
 }
 
 func (s *Server) Render(c *fiber.Ctx, component templ.Component) error {

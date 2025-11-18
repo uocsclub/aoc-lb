@@ -135,7 +135,7 @@ func ensureUsers(db *sql.Tx, data types.AOCData) error {
 
 	for _, user := range data {
 		if presentUser[user.UserId] {
-			_, err = db.Exec("UPDATE aoc_user SET name=?;", user.Name)
+			_, err = db.Exec("UPDATE aoc_user SET name=? WHERE aoc_id = ?;", user.Name, user.UserId)
 			if err != nil {
 				return err
 			}

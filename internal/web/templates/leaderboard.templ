@@ -2,6 +2,7 @@ package templates
 
 import (
 	"slices"
+	"strings"
 	"uocsclub.net/aoclb/internal/types"
 )
 
@@ -14,7 +15,13 @@ templ AOCLeaderboard(data types.AOCData, daycount int) {
 			}
 
 			slices.SortFunc(entries, func(a, b *types.AOCUserLB) int {
-				return b.Score - a.Score
+				diff := b.Score - a.Score
+				if diff != 0 {
+					return diff
+				}
+
+				diff = strings.Compare(a.Name, b.Name)
+				return diff
 			})
 		}}
 		for idx, entry := range entries {
