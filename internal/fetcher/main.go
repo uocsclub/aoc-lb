@@ -40,6 +40,7 @@ func FetchAOCLeaderboard(config *AOCFetcherConfig) (types.AOCData, error) {
 		log.Printf("ERROR: %s\n", err)
 		return nil, errors.New("Failed to fetch AOC")
 	}
+	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
 

@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Source Code Pro';
+  font-style: normal;
+  font-weight: 300;
+  src: url(SourceCodePro-300.woff) format('woff');
+}
+
+body {
+    font-family: "Source Code Pro", monospace;
+    color: #cccccc;
+    background-color: #0f0f23; 
+    font-weight: 300;
+    font-size: 14pt;
+}
+
+a {
+    @apply underline cursor-pointer text-[#009900] hover:text-[#99ff99];
+}
+
+a::before{
+    content: "["
+}
+
+
+a::after{
+    content: "]"
+}
+
+input {
+    @apply border-1 border-solid border-[#666666] px-0 py-[2px] bg-[#10101a];
+}

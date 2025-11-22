@@ -4,10 +4,16 @@ type AOCData = map[int]*AOCUserLB
 
 type AOCUserLB struct {
 	Year        string
-	UserId      int
-	Score       int // local LB score
-	Name        string
+	User        AOCUser
+	Score       int                    // local LB score
 	Completions map[int]*AOCCompletion // indexed by day
+}
+
+type AOCUser struct {
+	UserId       int
+	Name         string
+	GithubId     int
+	GithubAvatar string
 }
 
 type AOCCompletion struct {

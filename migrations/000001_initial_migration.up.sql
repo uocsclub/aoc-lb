@@ -2,7 +2,8 @@
 CREATE TABLE aoc_user (
     aoc_id INTEGER PRIMARY KEY NOT NULL, -- aoc is probably consistent with their IDs
     name TEXT,
-    sso_val TEXT
+    github_id INTEGER DEFAULT NULL,
+    avatar_url TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE leaderboard_entry (

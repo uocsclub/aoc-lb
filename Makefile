@@ -19,5 +19,5 @@ air-install:
 
 
 css: tailwind-install
-	./tailwindcss --minify -i ./internal/web/styles/tailwind.css -o ./internal/web/assets/css/tailwind.css
+	./tailwindcss --minify -i ./internal/web/styles/base.css -o ./internal/web/assets/css/tailwind.css
 

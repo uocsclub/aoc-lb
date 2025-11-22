@@ -1,0 +1,60 @@
+package templates
+
+import "net/url"
+
+templ GithubLogin(clientId string, redirectUrl string) {
+	{{
+		oauthUrl, _ := url.Parse("https://github.com/login/oauth/authorize")
+		query := oauthUrl.Query()
+		query.Set("client_id", clientId)
+		query.Set("redirect_uri", redirectUrl)
+		oauthUrl.RawQuery = query.Encode()
+	}}
+	<a
+		href={ oauthUrl.String() }
+	>
+		Login with Github
+	</a>
+}
+
+templ OAuthReturn(invalidId bool) {
+	<div class="flex flex-row justify-center p-5">
+		<script> window.history.replaceState({}, "", "/oauth2") </script>
+		<div class="w-200 flex flex-col">
+			<h1 class="text-center text-xl font-bold">Please enter your Advent of Code user id</h1>
+			<p class="my-2">You can get your id by doing the following: </p>
+			<ol class="pl-3 list-decimal list-inside">
+				<li>Log into <a href="https://adventofcode.com">Advent of code</a></li>
+				<li>Navigate to your <a href="https://adventofcode.com/settings">Settings</a> </li>
+				<li>Copy the number in your anonymous id (anonymous user #1234567)</li>
+			</ol>
+			<form id="oauth-aocid-form" class="mx-auto flex flex-col justify-center my-1 gap-2">
+				<input required type="text" name="aoc-id" autocomplete="off"/>
+				if invalidId {
+					<p class="text-sm text-center text-[#ff005c]">Invalid AoC Id</p>
+				}
+				<button
+					class="underline cursor-pointer text-[#009900] hover:text-[#99ff99]"
+					hx-trigger="click"
+					hx-target="body"
+					hx-swap="innerHTML"
+					hx-include="#oauth-aocid-form"
+					hx-post="/oauth2"
+				>
+					[Submit]
+				</button>
+			</form>
+		</div>
+	</div>
+}
+
+templ LoggedInWidget(username string) {
+	<span class="flex flex-row gap-2">
+		<p>{ username }</p>
+		<a
+			hx-get="/logout"
+			hx-target="body"
+			hx-swap="innerHTML"
+		>Logout</a>
+	</span>
+}

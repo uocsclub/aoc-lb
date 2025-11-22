@@ -20,7 +20,7 @@ templ AOCLeaderboard(data types.AOCData, daycount int) {
 					return diff
 				}
 
-				diff = strings.Compare(a.Name, b.Name)
+				diff = strings.Compare(a.User.Name, b.User.Name)
 				return diff
 			})
 		}}
@@ -35,26 +35,30 @@ templ AOCLeaderboardEntry(entry *types.AOCUserLB, idx int, daycount int) {
 		<span class="w-[1rem] text-left inline-block pr-1">{ idx })</span>
 		<span class="w-[4rem] text-right inline-block pr-1">{ entry.Score }</span>
 		for i := 1; i<= daycount; i++ {
-			<span
-				if c := entry.Completions[i]; c != nil {
-					if c.Star2 {
-						class="text-[#ffff66]"
-					}
-					else
-					if c.Star1 {
-						class="text-[#9999cc]"
-					}
-				} else {
-					class="text-[#333333]"
-				}
-			>*</span>
+			@AOCLeaderboardStar(entry.Completions[i])
 		}
-		<span>
-			if len(entry.Name) == 0 {
-				(anonymous user #{ entry.UserId })
+		<span class="ml-2">
+			if len(entry.User.Name) == 0 {
+				(anonymous user #{ entry.User.UserId })
 			} else {
-				{ entry.Name }
+				{ entry.User.Name }
 			}
 		</span>
 	</div>
+}
+
+templ AOCLeaderboardStar(completion *types.AOCCompletion) {
+	<span
+		if c := completion; c != nil {
+			if c.Star2 {
+				class="text-[#ffff66]"
+			}
+			else
+			if c.Star1 {
+				class="text-[#9999cc]"
+			}
+		} else {
+			class="text-[#333333]"
+		}
+	>*</span>
 }

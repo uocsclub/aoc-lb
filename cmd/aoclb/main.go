@@ -74,6 +74,7 @@ func main() {
 		Port:                    iport,
 		OAuth2GithubClientId:    os.Getenv("GITHUB_OAUTH_ID"),
 		OAuth2GithubRedirectURI: os.Getenv("GITHUB_OAUTH_REDIRECT_URI"),
+		OAuth2GithubSecret:      os.Getenv("GITHUB_OAUTH_SECRET"),
 	}, db)
 
 	log.Println("Started!")

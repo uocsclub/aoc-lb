@@ -39,9 +39,11 @@ func (l *AOCResponseLeaderboard) ToAOCData() types.AOCData {
 
 	for _, member := range l.Members {
 		entry := &types.AOCUserLB{
-			UserId:      member.Id,
+			User: types.AOCUser{
+				UserId: member.Id,
+				Name:   member.Name,
+			},
 			Score:       member.LocalScore,
-			Name:        member.Name,
 			Year:        l.Year,
 			Completions: map[int]*types.AOCCompletion{},
 		}

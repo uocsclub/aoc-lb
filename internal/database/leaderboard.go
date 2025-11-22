@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -27,7 +28,7 @@ func (d *DatabaseInst) GetLeaderboard(year string) (types.AOCData, error) {
 		}
 		var completions string
 
-		err = rows.Scan(&entry.Year, &entry.UserId, &entry.Name, &entry.Score, &completions)
+		err = rows.Scan(&entry.Year, &entry.User.UserId, &entry.User.Name, &entry.Score, &completions)
 
 		if err != nil {
 			return nil, err
@@ -62,7 +63,7 @@ func (d *DatabaseInst) GetLeaderboard(year string) (types.AOCData, error) {
 			}
 		}
 
-		data[entry.UserId] = entry
+		data[entry.User.UserId] = entry
 	}
 
 	return data, nil
@@ -77,7 +78,7 @@ func (d *DatabaseInst) StoreLeaderboard(data types.AOCData) (types.AOCData, erro
 		return nil, err
 	}
 
-	err = ensureUsers(db, data)
+	err = ensureAOCUsers(db, data)
 	if err != nil {
 		db.Rollback()
 		return nil, err
@@ -96,17 +97,17 @@ func (d *DatabaseInst) StoreLeaderboard(data types.AOCData) (types.AOCData, erro
 			}
 		}
 
-		row := db.QueryRow("SELECT user_id FROM leaderboard_entry WHERE year = ? AND user_id = ?", entry.Year, entry.UserId)
+		row := db.QueryRow("SELECT user_id FROM leaderboard_entry WHERE year = ? AND user_id = ?", entry.Year, entry.User.UserId)
 		var id int
 		if scanErr := row.Scan(&id); scanErr != nil {
-			_, err = db.Exec("INSERT INTO leaderboard_entry (year, user_id, score, day_completions) VALUES (?, ?, ?, ?);", entry.Year, entry.UserId, entry.Score, strings.Join(completions, ","))
+			_, err = db.Exec("INSERT INTO leaderboard_entry (year, user_id, score, day_completions) VALUES (?, ?, ?, ?);", entry.Year, entry.User.UserId, entry.Score, strings.Join(completions, ","))
 			if err != nil {
 				db.Rollback()
 				return nil, err
 			}
 			continue
 		}
-		_, err = db.Exec("UPDATE leaderboard_entry SET score = ?, day_completions = ? WHERE year = ? AND user_id = ?;", entry.Score, strings.Join(completions, ","), entry.Year, entry.UserId)
+		_, err = db.Exec("UPDATE leaderboard_entry SET score = ?, day_completions = ? WHERE year = ? AND user_id = ?;", entry.Score, strings.Join(completions, ","), entry.Year, entry.User.UserId)
 		if err != nil {
 			db.Rollback()
 			return nil, err
@@ -118,7 +119,60 @@ func (d *DatabaseInst) StoreLeaderboard(data types.AOCData) (types.AOCData, erro
 	return data, nil
 }
 
-func ensureUsers(db *sql.Tx, data types.AOCData) error {
+func (d *DatabaseInst) GetUserByGithubId(id int) (*types.AOCUser, error) {
+	d.dbLock.Lock()
+	defer d.dbLock.Unlock()
+
+	return getUserByGithubId(d.db, id)
+}
+
+func getUserByGithubId(db *sql.DB, id int) (*types.AOCUser, error) {
+	row := db.QueryRow("SELECT aoc_id, name, github_id, avatar_url FROM aoc_user WHERE github_id = ?;", id)
+
+	user := &types.AOCUser{}
+	err := row.Scan(&user.UserId, &user.Name, &user.GithubId, &user.GithubAvatar)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (d *DatabaseInst) LinkGithubUser(githubId int, githubAvatar string, aocId int64) (*types.AOCUser, error) {
+	d.dbLock.Lock()
+	defer d.dbLock.Unlock()
+
+	user, err := getUserByGithubId(d.db, githubId)
+	if err != nil {
+		return nil, err
+	}
+	if user != nil {
+		return nil, errors.New("User already paired")
+	}
+
+	db, err := d.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = db.Exec("UPDATE aoc_user SET github_id = ?, avatar_url = ? WHERE aoc_id = ?", githubId, githubAvatar, aocId)
+	if err != nil {
+		log.Println(err)
+		db.Rollback()
+		return nil, err
+	}
+
+	db.Commit();
+
+	return getUserByGithubId(d.db, githubId)
+}
+
+func ensureAOCUsers(db *sql.Tx, data types.AOCData) error {
 	res, err := db.Query("SELECT aoc_id FROM aoc_user")
 	if err != nil {
 		return err
@@ -134,15 +188,15 @@ func ensureUsers(db *sql.Tx, data types.AOCData) error {
 	}
 
 	for _, user := range data {
-		if presentUser[user.UserId] {
-			_, err = db.Exec("UPDATE aoc_user SET name=? WHERE aoc_id = ?;", user.Name, user.UserId)
+		if presentUser[user.User.UserId] {
+			_, err = db.Exec("UPDATE aoc_user SET name=? WHERE aoc_id = ?;", user.User.Name, user.User.UserId)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 
-		_, err = db.Exec("INSERT INTO aoc_user (aoc_id, name) VALUES (?, ?);", user.UserId, user.Name)
+		_, err = db.Exec("INSERT INTO aoc_user (aoc_id, name) VALUES (?, ?);", user.User.UserId, user.User.Name)
 		if err != nil {
 			return err
 		}
