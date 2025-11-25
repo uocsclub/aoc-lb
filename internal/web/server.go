@@ -93,8 +93,10 @@ func (s *Server) HandleRoot(c *fiber.Ctx) error {
 	}
 
 	var loginWidget templ.Component
+	loggedIn := false
 
 	if s.ValidateGithubLogin(c) {
+		loggedIn = true
 		name, ok := sess.Get("name").(string)
 		if ok {
 			loginWidget = templates.LoggedInWidget(name)
@@ -106,6 +108,7 @@ logged_out:
 
 	return s.Render(c, templates.LandingPage(
 		loginWidget,
+		loggedIn,
 		data,
 		25,
 	))
@@ -348,12 +351,12 @@ func (s *Server) HandleLogout(c *fiber.Ctx) error {
 	return redirect(c, "/")
 }
 
-func (s *Server )HandleModifiers(c *fiber.Ctx) error {
+func (s *Server) HandleModifiers(c *fiber.Ctx) error {
 	modifiers, err := s.db.GetModifiers()
 	if err != nil {
 		log.Println(err)
-	return c.SendStatus(http.StatusInternalServerError)}
+		return c.SendStatus(http.StatusInternalServerError)
+	}
 
 	return s.Render(c, templates.ModifiersPage(modifiers))
 }
-
