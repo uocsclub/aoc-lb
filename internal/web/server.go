@@ -68,6 +68,7 @@ func InitServer(config ServerConfig, db *database.DatabaseInst) *Server {
 	s.App.Get("/oauth2", s.HandleOAuthRedir)
 	s.App.Post("/oauth2", s.HandleOauthLink)
 	s.App.Get("/logout", s.HandleLogout)
+	s.App.Use("/modifiers", s.HandleModifiers)
 	s.App.Use("/", s.HandleRoot)
 
 	s.App.Listen(fmt.Sprintf(":%d", s.config.Port))
@@ -344,5 +345,15 @@ func (s *Server) HandleLogout(c *fiber.Ctx) error {
 		sess.Destroy()
 	}
 
-	return redirect(c,"/")
+	return redirect(c, "/")
 }
+
+func (s *Server )HandleModifiers(c *fiber.Ctx) error {
+	modifiers, err := s.db.GetModifiers()
+	if err != nil {
+		log.Println(err)
+	return c.SendStatus(http.StatusInternalServerError)}
+
+	return s.Render(c, templates.ModifiersPage(modifiers))
+}
+

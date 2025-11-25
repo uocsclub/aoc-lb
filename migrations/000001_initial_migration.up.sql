@@ -10,7 +10,7 @@ CREATE TABLE leaderboard_entry (
     year VARCHAR(5), -- I hope this breaks in 7975 years
     user_id INTEGER NOT NULL REFERENCES aoc_user(id),
     score INTEGER NOT NULL,
-    day_completions TEXT, -- comma separated in the format of 01d1 for 1st start of 1st day
+    day_completions TEXT, -- comma separated in the format of 01d1 for 1st star of 1st day
 
     PRIMARY KEY(year, user_id)
 );

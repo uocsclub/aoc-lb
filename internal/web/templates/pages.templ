@@ -1,0 +1,66 @@
+package templates
+
+import (
+	"slices"
+	"strings"
+	"uocsclub.net/aoclb/internal/types"
+)
+
+templ LandingPage(loginWidget templ.Component, leaderboardData types.AOCData, daycount int) {
+	<div class="nav sticky bg-[#10101a] top-0 left-0 right-0 flex flex-row p-2">
+		<span class="flex flex-row gap-4 self-start mr-auto">
+			<a hx-boost="true" href="/">Home</a>
+			<a hx-boost="true" href="/modifiers">Modifiers</a>
+		</span>
+		<span class="self-end">
+			@loginWidget
+		</span>
+	</div>
+	<div class="flex flex-row justify-center align-center w-[100vw] h-[100%]">
+		@AOCLeaderboard(leaderboardData, daycount)
+	</div>
+}
+
+templ ModifiersPage(modifiers []*types.AOCSubmissionModifier) {
+	<div class="nav sticky bg-[#10101a] top-0 left-0 right-0 flex flex-row justify-start p-2">
+		<a hx-boost="true" href="/">Back</a>
+	</div>
+	{{
+		bostedLanguages := []*types.AOCSubmissionModifier{}
+		normieLanguages := []*types.AOCSubmissionModifier{}
+
+		for _, modifier := range modifiers {
+			if modifier.ModifierDecPercent == 0 {
+				normieLanguages = append(normieLanguages, modifier)
+			} else {
+				bostedLanguages = append(bostedLanguages, modifier)
+			}
+		}
+
+		slices.SortFunc(bostedLanguages, func(a, b *types.AOCSubmissionModifier) int {
+			diff := b.ModifierDecPercent - a.ModifierDecPercent
+			if diff != 0 {
+				return diff
+			}
+			return strings.Compare(a.LanguageName, b.LanguageName)
+		})
+		slices.SortFunc(normieLanguages, func(a, b *types.AOCSubmissionModifier) int {
+			return strings.Compare(a.LanguageName, b.LanguageName)
+		})
+	}}
+	<h1 class="text-2xl underline pl-10">Currently buffed languages</h1>
+	@RenderLanguageList(bostedLanguages)
+	<h1 class="text-2xl underline pl-10">Languages intentionally <b>NOT</b> buffed</h1>
+	@RenderLanguageList(normieLanguages)
+}
+
+templ RenderLanguageList(languages []*types.AOCSubmissionModifier) {
+	<table class="px-10">
+		for _, lang := range languages {
+			<tr>
+				<td class="px-2"><b class="text-bold">{ lang.LanguageName }</b></td>
+				<td class="px-2"><span>{ float64(lang.ModifierDecPercent) / 10 }%</span></td>
+			</tr>
+		}
+	</table>
+}

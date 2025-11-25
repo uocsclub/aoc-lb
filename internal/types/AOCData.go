@@ -7,6 +7,7 @@ type AOCUserLB struct {
 	User        AOCUser
 	Score       int                    // local LB score
 	Completions map[int]*AOCCompletion // indexed by day
+	Modifiers   []*AOCUserSubmission
 }
 
 type AOCUser struct {
@@ -19,4 +20,16 @@ type AOCUser struct {
 type AOCCompletion struct {
 	Star1 bool
 	Star2 bool
+}
+
+type AOCSubmissionModifier struct {
+	LanguageName    string
+	ModifierDecPercent int // %*10, so 2.5% stored as 25
+}
+
+type AOCUserSubmission struct {
+	AOCSubmissionModifier
+	SubmissionUrl   string
+	Date            int
+	Star            int
 }

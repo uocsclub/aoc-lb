@@ -54,13 +54,16 @@ func (d *DatabaseInst) GetLeaderboard(year string) (types.AOCData, error) {
 				entry.Completions[i1] = &types.AOCCompletion{}
 			}
 
-			if s[1] == "1" {
+			switch s[1] {
+			case "1":
 				entry.Completions[i1].Star1 = true
+			case "2":
+				entry.Completions[i1].Star2 = true
+			default:
+				log.Printf("Got invalid completion format: %s\n", completion)
+				continue
 			}
 
-			if s[1] == "2" {
-				entry.Completions[i1].Star2 = true
-			}
 		}
 
 		data[entry.User.UserId] = entry
@@ -167,7 +170,7 @@ func (d *DatabaseInst) LinkGithubUser(githubId int, githubAvatar string, aocId i
 		return nil, err
 	}
 
-	db.Commit();
+	db.Commit()
 
 	return getUserByGithubId(d.db, githubId)
 }
