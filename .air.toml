@@ -13,6 +13,7 @@ cmd = "make build"
 # Array of commands to run after ^C
 post_cmd = []
 # Binary file yields from `cmd`.
+entrypoint = ".dist/aoclb"
 bin = ".dist/aoclb"
 # Customize binary, can setup environment variables when run your app.
 # Add additional arguments when running binary (bin/full_bin). Will run './tmp/main hello world'.

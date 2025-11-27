@@ -72,6 +72,7 @@ func main() {
 
 	web.InitServer(web.ServerConfig{
 		Port:                    iport,
+		Year: os.Getenv("YEAR"),
 		OAuth2GithubClientId:    os.Getenv("GITHUB_OAUTH_ID"),
 		OAuth2GithubRedirectURI: os.Getenv("GITHUB_OAUTH_REDIRECT_URI"),
 		OAuth2GithubSecret:      os.Getenv("GITHUB_OAUTH_SECRET"),

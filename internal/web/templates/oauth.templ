@@ -34,14 +34,13 @@ templ OAuthReturn(invalidId bool) {
 					<p class="text-sm text-center text-[#ff005c]">Invalid AoC Id</p>
 				}
 				<button
-					class="underline cursor-pointer text-[#009900] hover:text-[#99ff99]"
 					hx-trigger="click"
 					hx-target="body"
 					hx-swap="innerHTML"
 					hx-include="#oauth-aocid-form"
 					hx-post="/oauth2"
 				>
-					[Submit]
+					Submit
 				</button>
 			</form>
 		</div>

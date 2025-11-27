@@ -1,5 +1,10 @@
 package types
 
+import (
+	"slices"
+	"strings"
+)
+
 type AOCData = map[int]*AOCUserLB
 
 type AOCUserLB struct {
@@ -23,13 +28,24 @@ type AOCCompletion struct {
 }
 
 type AOCSubmissionModifier struct {
-	LanguageName    string
+	LanguageName       string
 	ModifierDecPercent int // %*10, so 2.5% stored as 25
 }
 
 type AOCUserSubmission struct {
 	AOCSubmissionModifier
-	SubmissionUrl   string
-	Date            int
-	Star            int
+	Id            int
+	SubmissionUrl string
+	Date          int
+	Star          int
+}
+
+func SortSubmissionModifiers(modifiers []*AOCSubmissionModifier) {
+	slices.SortFunc(modifiers, func(a, b *AOCSubmissionModifier) int {
+		diff := b.ModifierDecPercent - a.ModifierDecPercent
+		if diff != 0 {
+			return diff
+		}
+		return strings.Compare(a.LanguageName, b.LanguageName)
+	})
 }

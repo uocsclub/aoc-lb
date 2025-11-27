@@ -5,6 +5,7 @@ create table modifiers (
 );
 
 create table modifier_submission (
+    id INTEGER PRIMARY KEY NOT NULL,
     year VARCHAR(5), -- I hope this breaks in 7975 years
     user_id INTEGER NOT NULL REFERENCES aoc_user(id),
     day TEXT NOT NULL, -- 03d2 format 2nd star of 3rd day

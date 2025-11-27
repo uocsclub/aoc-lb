@@ -1,6 +1,10 @@
 package fetcher
 
-import "uocsclub.net/aoclb/internal/types"
+import (
+	"log"
+
+	"uocsclub.net/aoclb/internal/types"
+)
 
 type AOCResponseLeaderboard struct {
 	OwnerId        int                              `json:"owner_id"`
@@ -59,4 +63,18 @@ func (l *AOCResponseLeaderboard) ToAOCData() types.AOCData {
 	}
 
 	return data
+}
+
+// haha hack, eventually this should be info that comes from AOC (we literally get it lol)
+// however it requires much more work to link it all together than just hardcode
+func EstimateAOCDayCount(year string) int {
+	switch year {
+	case "2026":
+		log.Fatalln("Hey big boy, if you're still using this in a year, nice, but also fix this")
+		return 69 // shutup go compiler, this will never happen, idc that it doesn't return
+	case "2025":
+		return 12
+	default:
+		return 25
+	}
 }

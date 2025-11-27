@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"uocsclub.net/aoclb/internal/types"
@@ -16,7 +17,10 @@ templ LandingPage(loginWidget templ.Component, loggedIn bool, leaderboardData ty
 			@loginWidget
 		</span>
 	</div>
-	<div class="flex flex-row justify-center align-center w-[100vw] h-[100%]">
+	<div class="flex flex-row justify-around align-center w-[100vw] h-[100%]">
+		if loggedIn {
+			<span hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-get="/usermodifiers"></span>
+		}
 		@AOCLeaderboard(leaderboardData, daycount)
 	</div>
 }
@@ -37,16 +41,8 @@ templ ModifiersPage(modifiers []*types.AOCSubmissionModifier) {
 			}
 		}
 
-		slices.SortFunc(bostedLanguages, func(a, b *types.AOCSubmissionModifier) int {
-			diff := b.ModifierDecPercent - a.ModifierDecPercent
-			if diff != 0 {
-				return diff
-			}
-			return strings.Compare(a.LanguageName, b.LanguageName)
-		})
-		slices.SortFunc(normieLanguages, func(a, b *types.AOCSubmissionModifier) int {
-			return strings.Compare(a.LanguageName, b.LanguageName)
-		})
+		types.SortSubmissionModifiers(bostedLanguages)
+		types.SortSubmissionModifiers(normieLanguages)
 	}}
 	<h1 class="text-2xl underline pl-10">Currently buffed languages</h1>
 	@RenderLanguageList(bostedLanguages)
@@ -63,4 +59,100 @@ templ RenderLanguageList(languages []*types.AOCSubmissionModifier) {
 			</tr>
 		}
 	</table>
+}
+
+templ UserModifiers(userSubmissions []*types.AOCUserSubmission, allowedModifiers []*types.AOCSubmissionModifier, dayCount int) {
+	{{
+		slices.SortFunc(userSubmissions, func(a, b *types.AOCUserSubmission) int {
+			diff := a.Date - b.Date
+			if diff != 0 {
+				return diff
+			}
+			diff = a.Star - b.Star
+			if diff != 0 {
+				return diff
+			}
+			return strings.Compare(a.LanguageName, b.LanguageName)
+		})
+	}}
+	<section id="user-modifiers-widget" class="max-h-[80vh] w-120">
+		@UserModifierForm(allowedModifiers, nil, dayCount, "")
+		<ul id="user-modifiers-list" class="flex flex-col gap-3">
+			for _, modifier := range userSubmissions {
+				@UserModifier(modifier)
+			}
+		</ul>
+	</section>
+}
+
+templ UserModifier(modifier *types.AOCUserSubmission) {
+	<li id={ fmt.Sprintf("user-modifier-%d", modifier.Id) }>
+		<span>Day: { modifier.Date }#{ modifier.Star } Language: { modifier.LanguageName }</span>
+	</li>
+}
+
+templ OOBAppendUserModifier(modifier *types.AOCUserSubmission, otherContent templ.Component) {
+	<ul hx-swap-oob="beforeend:#user-modifiers-list">
+		@UserModifier(modifier)
+	</ul>
+	@otherContent
+}
+
+templ OOBUpdateUserModifier(modifier *types.AOCUserSubmission, otherContent templ.Component) {
+	<li hx-swap-oob={ fmt.Sprintf("innerHTML:#user-modifier-%d", modifier.Id) }>
+		@UserModifier(modifier)
+	</li>
+	@otherContent
+}
+
+templ UserModifierForm(allowedModifiers []*types.AOCSubmissionModifier, modifier *types.AOCUserSubmission, dayCount int, formErr string) {
+	{{
+		types.SortSubmissionModifiers(allowedModifiers)
+		if modifier == nil {
+			modifier = &types.AOCUserSubmission{
+				Id:            0,
+				SubmissionUrl: "",
+				Date:          1,
+				Star:          1,
+				AOCSubmissionModifier: types.AOCSubmissionModifier{
+					LanguageName: "c",
+				},
+			}
+		}
+	}}
+	<form
+		hx-post="/usermodifiers"
+		hx-swap="outerHTML"
+		hx-target="this"
+		class="flex flex-col gap-3 p-1"
+	>
+		<input type="hidden" name="id" value={ modifier.Id }/>
+		<span>
+			<select required name="star">
+				for i := range dayCount {
+					<option value={ i + 1 }>Day { i+1 }</option>
+				}
+			</select>
+			<select required name="star">
+				<option value="1">Star 1</option>
+				<option value="2">Star 2</option>
+			</select>
+		</span>
+		<span>
+			<label for="user-modifier-form-language">Language: </label>
+			<select id="user-modifier-form-language" required name="language">
+				for _, modifier :=range allowedModifiers {
+					<option name={ modifier.LanguageName }>{ modifier.LanguageName }</option>
+				}
+			</select>
+		</span>
+		<span>
+			<label for="user-modifier-form-submission-url">Submission URL: </label>
+			<input id="user-modifier-form-submission-url" required type="text" name="submission-url"/>
+		</span>
+		<button type="submit">Submit</button>
+		if len(formErr) != 0 {
+			<small class="text-sm text-red">{ formErr }</small>
+		}
+	</form>
 }

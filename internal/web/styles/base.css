@@ -15,19 +15,22 @@ body {
     font-size: 14pt;
 }
 
-a {
+a,
+button {
     @apply underline cursor-pointer text-[#009900] hover:text-[#99ff99];
 }
 
-a::before{
+a::before,
+button::before {
     content: "["
 }
 
 
-a::after{
+a::after,
+button::after {
     content: "]"
 }
 
-input {
-    @apply border-1 border-solid border-[#666666] px-0 py-[2px] bg-[#10101a];
+input, select {
+    @apply border-1 px-[1rem] border-solid border-[#666666] py-[2px] h-[2rem] bg-[#10101a];
 }

@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
@@ -17,6 +18,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/storage/sqlite3/v2"
 	"uocsclub.net/aoclb/internal/database"
+	"uocsclub.net/aoclb/internal/fetcher"
+	"uocsclub.net/aoclb/internal/types"
 	"uocsclub.net/aoclb/internal/web/templates"
 )
 
@@ -29,6 +32,7 @@ type Server struct {
 
 type ServerConfig struct {
 	Port                    int
+	Year                    string
 	OAuth2GithubClientId    string
 	OAuth2GithubRedirectURI string
 	OAuth2GithubSecret      string
@@ -40,6 +44,7 @@ func InitServer(config ServerConfig, db *database.DatabaseInst) *Server {
 		db:     db,
 		config: config,
 		store: session.New(session.Config{
+			Expiration: 24 * 7 * time.Hour, // 7 days expiration
 			Storage: sqlite3.New(sqlite3.Config{
 				Database: "./fiber_storage.sqlite3",
 			}),
@@ -68,8 +73,12 @@ func InitServer(config ServerConfig, db *database.DatabaseInst) *Server {
 	s.App.Get("/oauth2", s.HandleOAuthRedir)
 	s.App.Post("/oauth2", s.HandleOauthLink)
 	s.App.Get("/logout", s.HandleLogout)
-	s.App.Use("/modifiers", s.HandleModifiers)
-	s.App.Use("/", s.HandleRoot)
+	s.App.Get("/modifiers", s.HandleModifiers)
+	s.App.Get("/usermodifiers", s.HandleUserModifiersGet)
+	s.App.Post("/usermodifiers", s.HandleUserModifiersPost)
+	s.App.Post("/usermodifiers", s.HandleUserModifiersPatch)
+	s.App.Delete("/usermodifiers", s.HandleUserModifiersDelete)
+	s.App.Get("/", s.HandleRoot)
 
 	s.App.Listen(fmt.Sprintf(":%d", s.config.Port))
 	return s
@@ -212,7 +221,6 @@ func (s *Server) HandleOauthLink(c *fiber.Ctx) error {
 	if len(aocId_s) == 0 {
 		return s.Render(c, templates.OAuthReturn(true))
 	}
-	fmt.Println(aocId_s)
 	aocId_s = strings.TrimPrefix(aocId_s, "#")
 	aocId, err := strconv.ParseInt(aocId_s, 10, 64)
 	if err != nil {
@@ -359,4 +367,142 @@ func (s *Server) HandleModifiers(c *fiber.Ctx) error {
 	}
 
 	return s.Render(c, templates.ModifiersPage(modifiers))
+}
+
+func (s *Server) HandleUserModifiersGet(c *fiber.Ctx) error {
+	if !s.ValidateGithubLogin(c) {
+		return c.SendStatus(http.StatusForbidden)
+	}
+
+	sess, err := s.store.Get(c)
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+	aocId, ok := sess.Get("aoc_id").(int)
+	if !ok {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	userSubmissions, err := s.db.GetUserSubmissions(s.config.Year, aocId)
+	if err != nil {
+		log.Println(err)
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	modifiers, err := s.db.GetModifiers()
+	if err != nil {
+		log.Println(err)
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return s.Render(c, templates.UserModifiers(userSubmissions, modifiers, fetcher.EstimateAOCDayCount(s.config.Year)))
+}
+
+type userSubmissionFormBody struct {
+	SubmissionId  int    `form:"id" query:"id"`
+	Day           int    `form:"day"`
+	StarId        int    `form:"star"`
+	LanguageName  string `form:"language"`
+	SubmissionUrl string `form:"submission-url"`
+}
+
+func (s *Server) HandleUserModifiersPatch(c *fiber.Ctx) error {
+	if !s.ValidateGithubLogin(c) {
+		return c.SendStatus(http.StatusForbidden)
+	}
+
+	sess, err := s.store.Get(c)
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+	_, ok := sess.Get("aoc_id").(int)
+	if !ok {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return c.SendStatus(http.StatusNotImplemented)
+}
+
+func (s *Server) HandleUserModifiersPost(c *fiber.Ctx) error {
+	if !s.ValidateGithubLogin(c) {
+		return c.SendStatus(http.StatusForbidden)
+	}
+
+	sess, err := s.store.Get(c)
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+	aocId, ok := sess.Get("aoc_id").(int)
+	if !ok {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	modifiers, err := s.db.GetModifiers()
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	data := &userSubmissionFormBody{}
+	err = c.BodyParser(data)
+	if err != nil {
+		fmt.Println(err)
+		return c.SendStatus(http.StatusUnprocessableEntity)
+	}
+
+	submission := &types.AOCUserSubmission{
+		AOCSubmissionModifier: types.AOCSubmissionModifier{LanguageName: data.LanguageName},
+		Id:                    0,
+		SubmissionUrl:         data.SubmissionUrl,
+		Date:                  data.Day,
+		Star:                  data.StarId,
+	}
+
+	if data.StarId < 1 || data.StarId > 2 {
+		return c.SendStatus(http.StatusUnprocessableEntity)
+	}
+
+	dayCount := fetcher.EstimateAOCDayCount(s.config.Year)
+
+	if len(data.SubmissionUrl) == 0 {
+		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Missing submission url"))
+	}
+
+	if data.Day > fetcher.EstimateAOCDayCount(s.config.Year) {
+		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Invalid date"))
+	}
+
+	langModifier, err := s.db.GetModifiersByLanguageName(data.LanguageName)
+	if err != nil {
+		fmt.Println(err)
+		return c.SendStatus(http.StatusUnprocessableEntity)
+	}
+	if langModifier == nil {
+		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Invalid language selection"))
+	}
+
+	submission.AOCSubmissionModifier = *langModifier
+
+	submission, err = s.db.AddUserSubmission(s.config.Year, aocId, submission)
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return s.Render(c, templates.OOBAppendUserModifier(submission, templates.UserModifierForm(modifiers, nil, dayCount, "")))
+}
+
+func (s *Server) HandleUserModifiersDelete(c *fiber.Ctx) error {
+	if !s.ValidateGithubLogin(c) {
+		return c.SendStatus(http.StatusForbidden)
+	}
+
+	sess, err := s.store.Get(c)
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+	_, ok := sess.Get("aoc_id").(int)
+	if !ok {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return c.SendStatus(http.StatusNotImplemented)
 }
