@@ -457,17 +457,17 @@ func (s *Server) HandleUserModifiersPost(c *fiber.Ctx) error {
 		Star:                  data.StarId,
 	}
 
-	if data.StarId < 1 || data.StarId > 2 {
+	if submission.Star < 1 || submission.Star > 2 {
 		return c.SendStatus(http.StatusUnprocessableEntity)
 	}
 
 	dayCount := fetcher.EstimateAOCDayCount(s.config.Year)
 
-	if len(data.SubmissionUrl) == 0 {
+	if len(submission.SubmissionUrl) == 0 {
 		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Missing submission url"))
 	}
 
-	if data.Day > fetcher.EstimateAOCDayCount(s.config.Year) {
+	if submission.Date <= 0 || submission.Date > fetcher.EstimateAOCDayCount(s.config.Year) {
 		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Invalid date"))
 	}
 

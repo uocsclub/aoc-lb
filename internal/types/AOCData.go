@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -48,4 +49,8 @@ func SortSubmissionModifiers(modifiers []*AOCSubmissionModifier) {
 		}
 		return strings.Compare(a.LanguageName, b.LanguageName)
 	})
+}
+
+func FormatDecPercent(i int) string {
+	return fmt.Sprintf("%d.%d%%", i/10, i%10);
 }

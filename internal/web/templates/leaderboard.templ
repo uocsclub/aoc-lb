@@ -47,6 +47,13 @@ templ AOCLeaderboardEntry(entry *types.AOCUserLB, idx int, daycount int) {
 	</div>
 }
 
+templ AOCLeaderboardStar2(starIdx int) {
+	@AOCLeaderboardStar(&types.AOCCompletion{
+		Star1: starIdx == 1,
+		Star2: starIdx == 2,
+	})
+}
+
 templ AOCLeaderboardStar(completion *types.AOCCompletion) {
 	<span
 		if c := completion; c != nil {

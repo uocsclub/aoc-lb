@@ -77,7 +77,7 @@ templ UserModifiers(userSubmissions []*types.AOCUserSubmission, allowedModifiers
 	}}
 	<section id="user-modifiers-widget" class="max-h-[80vh] w-120">
 		@UserModifierForm(allowedModifiers, nil, dayCount, "")
-		<ul id="user-modifiers-list" class="flex flex-col gap-3">
+		<ul id="user-modifiers-list" class="grid grid-cols-[min-content_1fr_min-content] gap-3">
 			for _, modifier := range userSubmissions {
 				@UserModifier(modifier)
 			}
@@ -86,8 +86,13 @@ templ UserModifiers(userSubmissions []*types.AOCUserSubmission, allowedModifiers
 }
 
 templ UserModifier(modifier *types.AOCUserSubmission) {
-	<li id={ fmt.Sprintf("user-modifier-%d", modifier.Id) }>
-		<span>Day: { modifier.Date }#{ modifier.Star } Language: { modifier.LanguageName }</span>
+	<li id={ fmt.Sprintf("user-modifier-%d", modifier.Id) } class="grid grid-cols-subgrid col-span-3">
+		<span>
+			@AOCLeaderboardStar2(modifier.Star)
+			{ modifier.Date }
+		</span>
+		<span>{ modifier.LanguageName }</span>
+        <span>({ types.FormatDecPercent(modifier.ModifierDecPercent) })</span>
 	</li>
 }
 
@@ -128,7 +133,7 @@ templ UserModifierForm(allowedModifiers []*types.AOCSubmissionModifier, modifier
 	>
 		<input type="hidden" name="id" value={ modifier.Id }/>
 		<span>
-			<select required name="star">
+			<select required name="day">
 				for i := range dayCount {
 					<option value={ i + 1 }>Day { i+1 }</option>
 				}
