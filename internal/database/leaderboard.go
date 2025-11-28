@@ -65,6 +65,7 @@ func (d *DatabaseInst) GetLeaderboard(year string) (types.AOCData, error) {
 			}
 
 		}
+		entry.Modifiers, _ = getUserSubmissionsByFilter(d.db, " user_id = ? AND year = ?", entry.User.UserId, year)
 
 		data[entry.User.UserId] = entry
 	}

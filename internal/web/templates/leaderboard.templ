@@ -22,7 +22,7 @@ templ AOCLeaderboard(data types.AOCData, daycount int) {
 				}
 
 				slices.SortFunc(entries, func(a, b *types.AOCUserLB) int {
-					diff := b.Score - a.Score
+					diff := b.GetAdjustedScore() - a.GetAdjustedScore()
 					if diff != 0 {
 						return diff
 					}
@@ -41,7 +41,8 @@ templ AOCLeaderboard(data types.AOCData, daycount int) {
 templ AOCLeaderboardEntry(entry *types.AOCUserLB, idx int, daycount int) {
 	<div>
 		<span class="w-[1rem] text-left inline-block pr-1">{ idx })</span>
-		<span class="w-[4rem] text-right inline-block pr-1">{ entry.Score }</span>
+		<span class="w-[4rem] text-right inline-block pr-1">{ entry.GetAdjustedScore() }</span>
+		<span class="w-[4rem] text-left inline-block pr-1 text-[#009900]">({ entry.Score })</span>
 		for i := 1; i<= daycount; i++ {
 			@AOCLeaderboardStar(entry.Completions[i])
 		}
