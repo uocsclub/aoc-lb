@@ -471,7 +471,7 @@ func (s *Server) HandleUserModifiersPost(c *fiber.Ctx) error {
 		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Invalid date"))
 	}
 
-	langModifier, err := s.db.GetModifiersByLanguageName(data.LanguageName)
+	langModifier, err := s.db.GetModifiersByLanguageName(submission.LanguageName)
 	if err != nil {
 		fmt.Println(err)
 		return c.SendStatus(http.StatusUnprocessableEntity)
@@ -499,10 +499,36 @@ func (s *Server) HandleUserModifiersDelete(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
-	_, ok := sess.Get("aoc_id").(int)
+	aocId, ok := sess.Get("aoc_id").(int)
 	if !ok {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
-	return c.SendStatus(http.StatusNotImplemented)
+	data := &userSubmissionFormBody{}
+	err = c.QueryParser(data) // delete requests don't have bodies
+	if err != nil {
+		fmt.Println(err)
+		return c.SendStatus(http.StatusUnprocessableEntity)
+	}
+
+	submission, err := s.db.GetUserSubmissionById(data.SubmissionId)
+	if err != nil {
+		log.Println(err)
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+	if submission == nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+	if submission.AocUserId != aocId {
+		return c.SendStatus(http.StatusForbidden)
+	}
+
+	err = s.db.DeleteUserSubmission(data.SubmissionId)
+	if err != nil {
+		log.Println(err)
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	c.Status(http.StatusOK)
+	return c.SendString("")
 }

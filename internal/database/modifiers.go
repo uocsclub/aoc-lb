@@ -157,7 +157,9 @@ func getUserSubmissionsByFilter(db *sql.DB, filter string, args ...any) ([]*type
 			day,
 			submission_url,
 			m.language_name,
-			modifier_dec_percent
+			modifier_dec_percent,
+			user_id,
+			id
 		FROM modifier_submission AS s 
 		LEFT JOIN modifiers m ON s.language_name = m.language_name`
 	if len(filter) != 0 {
@@ -175,7 +177,7 @@ func getUserSubmissionsByFilter(db *sql.DB, filter string, args ...any) ([]*type
 		rowData := &types.AOCUserSubmission{}
 		var dayString string
 
-		err = rows.Scan(&dayString, &rowData.SubmissionUrl, &rowData.LanguageName, &rowData.ModifierDecPercent)
+		err = rows.Scan(&dayString, &rowData.SubmissionUrl, &rowData.LanguageName, &rowData.ModifierDecPercent, &rowData.AocUserId, &rowData.Id)
 		if err != nil {
 			log.Println(err)
 			continue

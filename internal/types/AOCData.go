@@ -35,6 +35,7 @@ type AOCSubmissionModifier struct {
 
 type AOCUserSubmission struct {
 	AOCSubmissionModifier
+	AocUserId        int
 	Id            int
 	SubmissionUrl string
 	Date          int
@@ -52,5 +53,5 @@ func SortSubmissionModifiers(modifiers []*AOCSubmissionModifier) {
 }
 
 func FormatDecPercent(i int) string {
-	return fmt.Sprintf("%d.%d%%", i/10, i%10);
+	return fmt.Sprintf("%d.%d%%", i/10, i%10)
 }

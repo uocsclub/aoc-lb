@@ -17,7 +17,7 @@ templ LandingPage(loginWidget templ.Component, loggedIn bool, leaderboardData ty
 			@loginWidget
 		</span>
 	</div>
-	<div class="flex flex-row justify-around align-center w-[100vw] h-[100%]">
+	<div class="flex flex-row flex-wrap gap-y-10 justify-around align-center w-[100vw] h-[100%]">
 		if loggedIn {
 			<span hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-get="/usermodifiers"></span>
 		}
@@ -75,9 +75,9 @@ templ UserModifiers(userSubmissions []*types.AOCUserSubmission, allowedModifiers
 			return strings.Compare(a.LanguageName, b.LanguageName)
 		})
 	}}
-	<section id="user-modifiers-widget" class="max-h-[80vh] w-120">
+	<section id="user-modifiers-widget" class="max-h-[80vh] w-160">
 		@UserModifierForm(allowedModifiers, nil, dayCount, "")
-		<ul id="user-modifiers-list" class="grid grid-cols-[min-content_1fr_min-content] gap-3">
+		<ul id="user-modifiers-list" class="grid grid-cols-[min-content_1fr_min-content_min-content_min-content] gap-2">
 			for _, modifier := range userSubmissions {
 				@UserModifier(modifier)
 			}
@@ -86,13 +86,20 @@ templ UserModifiers(userSubmissions []*types.AOCUserSubmission, allowedModifiers
 }
 
 templ UserModifier(modifier *types.AOCUserSubmission) {
-	<li id={ fmt.Sprintf("user-modifier-%d", modifier.Id) } class="grid grid-cols-subgrid col-span-3">
+	<li id={ fmt.Sprintf("user-modifier-%d", modifier.Id) } class="grid grid-cols-subgrid col-span-5">
 		<span>
 			@AOCLeaderboardStar2(modifier.Star)
 			{ modifier.Date }
 		</span>
 		<span>{ modifier.LanguageName }</span>
-        <span>({ types.FormatDecPercent(modifier.ModifierDecPercent) })</span>
+		<span>({ types.FormatDecPercent(modifier.ModifierDecPercent) })</span>
+		<button>Edit</button>
+		<button
+			hx-delete="/usermodifiers"
+			hx-vals={ fmt.Sprintf("{\"id\":\"%d\"}", modifier.Id) }
+			hx-target="closest li"
+			hx-swap="outerHTML"
+		>Delete</button>
 	</li>
 }
 

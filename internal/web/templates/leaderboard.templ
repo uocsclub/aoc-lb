@@ -7,26 +7,28 @@ import (
 )
 
 templ AOCLeaderboard(data types.AOCData, daycount int) {
-	<div>
-		{{
-			entries := make([]*types.AOCUserLB, 0, len(data))
-			for _, entry := range data {
-				entries = append(entries, entry)
-			}
-
-			slices.SortFunc(entries, func(a, b *types.AOCUserLB) int {
-				diff := b.Score - a.Score
-				if diff != 0 {
-					return diff
+	<div class="w-200 flex flex-col items-center">
+		<div>
+			{{
+				entries := make([]*types.AOCUserLB, 0, len(data))
+				for _, entry := range data {
+					entries = append(entries, entry)
 				}
 
-				diff = strings.Compare(a.User.Name, b.User.Name)
-				return diff
-			})
-		}}
-		for idx, entry := range entries {
-			@AOCLeaderboardEntry(entry, idx, daycount)
-		}
+				slices.SortFunc(entries, func(a, b *types.AOCUserLB) int {
+					diff := b.Score - a.Score
+					if diff != 0 {
+						return diff
+					}
+
+					diff = strings.Compare(a.User.Name, b.User.Name)
+					return diff
+				})
+			}}
+			for idx, entry := range entries {
+				@AOCLeaderboardEntry(entry, idx, daycount)
+			}
+		</div>
 	</div>
 }
 
