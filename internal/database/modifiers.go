@@ -17,7 +17,7 @@ func (d *DatabaseInst) GetUserSubmissions(year string, aocUserId int) ([]*types.
 	return getUserSubmissionsByFilter(d.db, "user_id = ? AND year = ?", aocUserId, year)
 }
 
-func (d *DatabaseInst) AddUserSubmission(year string, aocUserId int, submission *types.AOCUserSubmission) (*types.AOCUserSubmission, error) {
+func (d *DatabaseInst) AddUserSubmission(year string, submission *types.AOCUserSubmission) (*types.AOCUserSubmission, error) {
 	d.dbLock.Lock()
 	defer d.dbLock.Unlock()
 
@@ -36,7 +36,7 @@ func (d *DatabaseInst) AddUserSubmission(year string, aocUserId int, submission 
 		VALUES (?, ?, ?, ?, ?) RETURNING id;
 		`,
 		year,
-		aocUserId,
+		submission.AocUserId,
 		fmt.Sprintf("%02dd%d", submission.Date, submission.Star),
 		submission.SubmissionUrl,
 		submission.LanguageName,
@@ -65,11 +65,10 @@ func (d *DatabaseInst) UpdateUserSubmission(submission *types.AOCUserSubmission)
 	}
 
 	_, err = db.Exec(`
-		UPDATE modifier_submission
-		SET
-		day,
-		submission_url,
-		language_name 
+		UPDATE modifier_submission SET
+		day = ?,
+		submission_url = ?,
+		language_name = ?
 		WHERE id = ?;
 		`,
 		fmt.Sprintf("%02dd%d", submission.Date, submission.Star),

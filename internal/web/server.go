@@ -76,7 +76,7 @@ func InitServer(config ServerConfig, db *database.DatabaseInst) *Server {
 	s.App.Get("/modifiers", s.HandleModifiers)
 	s.App.Get("/usermodifiers", s.HandleUserModifiersGet)
 	s.App.Post("/usermodifiers", s.HandleUserModifiersPost)
-	s.App.Post("/usermodifiers", s.HandleUserModifiersPatch)
+	s.App.Patch("/usermodifiers", s.HandleUserModifiersPatch)
 	s.App.Delete("/usermodifiers", s.HandleUserModifiersDelete)
 	s.App.Get("/", s.HandleRoot)
 
@@ -245,6 +245,7 @@ func (s *Server) HandleOauthLink(c *fiber.Ctx) error {
 
 	sess.Set("aoc_id", user.UserId)
 	sess.Set("name", user.Name)
+	sess.Set("github_id", user.GithubId)
 
 	return redirect(c, "/")
 }
@@ -333,19 +334,22 @@ func (s *Server) ValidateGithubLogin(c *fiber.Ctx) bool {
 		return false
 	}
 
-	data, err := FetchGithubOAuthUserEntpoint(token)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
+	// Fetching gh every api call makes the app feel really slow and unresponsive
 
-	user, err := s.db.GetUserByGithubId(data.GithubUserId)
-	if err != nil || user == nil {
-		return false
-	}
-
-	sess.Set("aoc_id", user.UserId)
-	sess.Set("name", user.Name)
+	// data, err := FetchGithubOAuthUserEntpoint(token)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return false
+	// }
+	//
+	// user, err := s.db.GetUserByGithubId(data.GithubUserId)
+	// if err != nil || user == nil {
+	// 	return false
+	// }
+	//
+	// sess.Set("aoc_id", user.UserId)
+	// sess.Set("name", user.Name)
+	// sess.Set("github_id", user.GithubId)
 
 	return true
 }
@@ -367,6 +371,14 @@ func (s *Server) HandleModifiers(c *fiber.Ctx) error {
 	}
 
 	return s.Render(c, templates.ModifiersPage(modifiers))
+}
+
+type userSubmissionFormBody struct {
+	SubmissionId  int    `form:"id" query:"id"`
+	Day           int    `form:"day"`
+	StarId        int    `form:"star"`
+	LanguageName  string `form:"language"`
+	SubmissionUrl string `form:"submission-url"`
 }
 
 func (s *Server) HandleUserModifiersGet(c *fiber.Ctx) error {
@@ -395,15 +407,22 @@ func (s *Server) HandleUserModifiersGet(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
-	return s.Render(c, templates.UserModifiers(userSubmissions, modifiers, fetcher.EstimateAOCDayCount(s.config.Year)))
-}
+	data := &userSubmissionFormBody{}
+	err = c.QueryParser(data)
+	if err != nil {
+		fmt.Println(err)
+		return c.SendStatus(http.StatusUnprocessableEntity)
+	}
 
-type userSubmissionFormBody struct {
-	SubmissionId  int    `form:"id" query:"id"`
-	Day           int    `form:"day"`
-	StarId        int    `form:"star"`
-	LanguageName  string `form:"language"`
-	SubmissionUrl string `form:"submission-url"`
+	var formPrefill *types.AOCUserSubmission = nil
+	if data.SubmissionId != 0 {
+		submission, err := s.db.GetUserSubmissionById(data.SubmissionId)
+		if err == nil && submission != nil && submission.AocUserId == aocId {
+			formPrefill = submission
+		}
+	}
+
+	return s.Render(c, templates.UserModifiers(userSubmissions, modifiers, fetcher.EstimateAOCDayCount(s.config.Year), formPrefill))
 }
 
 func (s *Server) HandleUserModifiersPatch(c *fiber.Ctx) error {
@@ -415,12 +434,76 @@ func (s *Server) HandleUserModifiersPatch(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
-	_, ok := sess.Get("aoc_id").(int)
+	aocId, ok := sess.Get("aoc_id").(int)
 	if !ok {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
-	return c.SendStatus(http.StatusNotImplemented)
+	modifiers, err := s.db.GetModifiers()
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	data := &userSubmissionFormBody{}
+	err = c.BodyParser(data)
+	if err != nil {
+		fmt.Println(err)
+		return c.SendStatus(http.StatusUnprocessableEntity)
+	}
+
+	submission := &types.AOCUserSubmission{
+		AOCSubmissionModifier: types.AOCSubmissionModifier{LanguageName: data.LanguageName},
+		AocUserId:             aocId,
+		Id:                    data.SubmissionId,
+		SubmissionUrl:         data.SubmissionUrl,
+		Date:                  data.Day,
+		Star:                  data.StarId,
+	}
+
+	oldSubmission, err := s.db.GetUserSubmissionById(data.SubmissionId)
+	if err != nil {
+		log.Println(err)
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+	if oldSubmission == nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+	if oldSubmission.AocUserId != aocId {
+		return c.SendStatus(http.StatusForbidden)
+	}
+
+	if submission.Star < 1 || submission.Star > 2 {
+		return c.SendStatus(http.StatusUnprocessableEntity)
+	}
+
+	dayCount := fetcher.EstimateAOCDayCount(s.config.Year)
+
+	if len(submission.SubmissionUrl) == 0 {
+		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Missing submission url"))
+	}
+
+	if submission.Date <= 0 || submission.Date > fetcher.EstimateAOCDayCount(s.config.Year) {
+		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Invalid date"))
+	}
+
+	langModifier, err := s.db.GetModifiersByLanguageName(submission.LanguageName)
+	if err != nil {
+		fmt.Println(err)
+		return c.SendStatus(http.StatusUnprocessableEntity)
+	}
+	if langModifier == nil {
+		return s.Render(c, templates.UserModifierForm(modifiers, submission, dayCount, "Invalid language selection"))
+	}
+
+	submission.AOCSubmissionModifier = *langModifier
+
+	newSubmission, err := s.db.UpdateUserSubmission(submission)
+	if err != nil {
+		log.Println(err)
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return s.Render(c, templates.OOBUpdateUserModifier(newSubmission, templates.UserModifierForm(modifiers, nil, dayCount, "")))
 }
 
 func (s *Server) HandleUserModifiersPost(c *fiber.Ctx) error {
@@ -451,6 +534,7 @@ func (s *Server) HandleUserModifiersPost(c *fiber.Ctx) error {
 
 	submission := &types.AOCUserSubmission{
 		AOCSubmissionModifier: types.AOCSubmissionModifier{LanguageName: data.LanguageName},
+		AocUserId:             aocId,
 		Id:                    0,
 		SubmissionUrl:         data.SubmissionUrl,
 		Date:                  data.Day,
@@ -482,7 +566,7 @@ func (s *Server) HandleUserModifiersPost(c *fiber.Ctx) error {
 
 	submission.AOCSubmissionModifier = *langModifier
 
-	submission, err = s.db.AddUserSubmission(s.config.Year, aocId, submission)
+	submission, err = s.db.AddUserSubmission(s.config.Year, submission)
 	if err != nil {
 		return c.SendStatus(http.StatusInternalServerError)
 	}

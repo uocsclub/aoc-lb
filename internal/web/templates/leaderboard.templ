@@ -7,8 +7,8 @@ import (
 )
 
 templ AOCLeaderboard(data types.AOCData, daycount int) {
-	<div class="w-200 flex flex-col items-center">
-		<div>
+	<div class="min-w-200 flex flex-col items-center">
+		<div class="break-keep">
 			{{
 				entries := make([]*types.AOCUserLB, 0, len(data))
 				for _, entry := range data {

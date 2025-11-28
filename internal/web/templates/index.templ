@@ -8,10 +8,19 @@ templ Index(body templ.Component) {
 			<title>Advent of code leaderboard</title>
 			<script src="/assets/js/htmx.min.js"> </script>
 			<link href="/assets/css/tailwind.css" rel="stylesheet"/>
-            <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.png">
+			<link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.png"/>
 		</head>
 		<body>
 			@body
 		</body>
+		<script defer>
+            document.body.addEventListener("htmx:beforeRequest",()=>{
+                document.body.classList.add("cursor-progress")
+            })
+
+            document.body.addEventListener("htmx:afterRequest",()=>{
+                document.body.classList.remove("cursor-progress")
+            })
+        </script>
 	</html>
 }

@@ -61,7 +61,7 @@ templ RenderLanguageList(languages []*types.AOCSubmissionModifier) {
 	</table>
 }
 
-templ UserModifiers(userSubmissions []*types.AOCUserSubmission, allowedModifiers []*types.AOCSubmissionModifier, dayCount int) {
+templ UserModifiers(userSubmissions []*types.AOCUserSubmission, allowedModifiers []*types.AOCSubmissionModifier, dayCount int, formPrefill *types.AOCUserSubmission) {
 	{{
 		slices.SortFunc(userSubmissions, func(a, b *types.AOCUserSubmission) int {
 			diff := a.Date - b.Date
@@ -76,7 +76,7 @@ templ UserModifiers(userSubmissions []*types.AOCUserSubmission, allowedModifiers
 		})
 	}}
 	<section id="user-modifiers-widget" class="max-h-[80vh] w-160">
-		@UserModifierForm(allowedModifiers, nil, dayCount, "")
+		@UserModifierForm(allowedModifiers, formPrefill, dayCount, "")
 		<ul id="user-modifiers-list" class="grid grid-cols-[min-content_1fr_min-content_min-content_min-content] gap-2">
 			for _, modifier := range userSubmissions {
 				@UserModifier(modifier)
@@ -91,15 +91,23 @@ templ UserModifier(modifier *types.AOCUserSubmission) {
 			@AOCLeaderboardStar2(modifier.Star)
 			{ modifier.Date }
 		</span>
-		<span>{ modifier.LanguageName }</span>
+		<span class="max-w-80 break-keep min-w-max">{ modifier.LanguageName }</span>
 		<span>({ types.FormatDecPercent(modifier.ModifierDecPercent) })</span>
-		<button>Edit</button>
+		<button
+			hx-get="/usermodifiers"
+			hx-vals={ fmt.Sprintf("{\"id\":\"%d\"}", modifier.Id) }
+			hx-target="#user-modifiers-widget"
+			hx-swap="outerHTML"
+		>Edit</button>
 		<button
 			hx-delete="/usermodifiers"
 			hx-vals={ fmt.Sprintf("{\"id\":\"%d\"}", modifier.Id) }
 			hx-target="closest li"
 			hx-swap="outerHTML"
 		>Delete</button>
+		<span class="col-span-5">
+			<a class="ml-5" href={ modifier.SubmissionUrl } target="_blank">{modifier.SubmissionUrl}</a>
+		</span>
 	</li>
 }
 
@@ -111,9 +119,9 @@ templ OOBAppendUserModifier(modifier *types.AOCUserSubmission, otherContent temp
 }
 
 templ OOBUpdateUserModifier(modifier *types.AOCUserSubmission, otherContent templ.Component) {
-	<li hx-swap-oob={ fmt.Sprintf("innerHTML:#user-modifier-%d", modifier.Id) }>
+	<ul hx-swap-oob={ fmt.Sprintf("innerHTML:#user-modifier-%d", modifier.Id) }>
 		@UserModifier(modifier)
-	</li>
+	</ul>
 	@otherContent
 }
 
@@ -133,7 +141,11 @@ templ UserModifierForm(allowedModifiers []*types.AOCSubmissionModifier, modifier
 		}
 	}}
 	<form
-		hx-post="/usermodifiers"
+		if modifier.Id == 0 {
+			hx-post="/usermodifiers"
+		} else {
+			hx-patch="/usermodifiers"
+		}
 		hx-swap="outerHTML"
 		hx-target="this"
 		class="flex flex-col gap-3 p-1"
@@ -142,27 +154,56 @@ templ UserModifierForm(allowedModifiers []*types.AOCSubmissionModifier, modifier
 		<span>
 			<select required name="day">
 				for i := range dayCount {
-					<option value={ i + 1 }>Day { i+1 }</option>
+					<option
+						value={ i + 1 }
+						if i+1 == modifier.Date {
+							selected
+						}
+					>Day { i+1 }</option>
 				}
 			</select>
 			<select required name="star">
-				<option value="1">Star 1</option>
-				<option value="2">Star 2</option>
+				<option
+					value="1"
+					if  modifier.Star == 1 {
+						selected
+					}
+				>Star 1</option>
+				<option
+					value="2"
+					if  modifier.Star == 2 {
+						selected
+					}
+				>Star 2</option>
 			</select>
 		</span>
 		<span>
 			<label for="user-modifier-form-language">Language: </label>
 			<select id="user-modifier-form-language" required name="language">
-				for _, modifier :=range allowedModifiers {
-					<option name={ modifier.LanguageName }>{ modifier.LanguageName }</option>
+				for _, allowedModifier :=range allowedModifiers {
+					<option
+						name={ allowedModifier.LanguageName }
+						if modifier.LanguageName == allowedModifier.LanguageName {
+							selected
+						}
+					>{ allowedModifier.LanguageName }</option>
 				}
 			</select>
 		</span>
-		<span>
+		<span class="flex flex-row gap-4">
 			<label for="user-modifier-form-submission-url">Submission URL: </label>
-			<input id="user-modifier-form-submission-url" required type="text" name="submission-url"/>
+			<input id="user-modifier-form-submission-url" class="grow min-w-0" required type="text" name="submission-url" value={ modifier.SubmissionUrl }/>
 		</span>
-		<button type="submit">Submit</button>
+		<span class="flex flex-row gap-3 justify-center">
+			<button type="submit">Submit</button>
+			<button
+				type="button"
+				hx-trigger="click"
+				hx-get="/usermodifiers"
+				hx-target="#user-modifiers-widget"
+				hx-swap="outerHTML"
+			>Clear</button>
+		</span>
 		if len(formErr) != 0 {
 			<small class="text-sm text-red">{ formErr }</small>
 		}
