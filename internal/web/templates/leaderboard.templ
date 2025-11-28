@@ -7,7 +7,13 @@ import (
 )
 
 templ AOCLeaderboard(data types.AOCData, daycount int) {
-	<div class="min-w-200 flex flex-col items-center">
+	<div
+		class="min-w-200 flex flex-col items-center"
+		hx-trigger="refresh-leaderboard from:body"
+		hx-get="/leaderboard"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
 		<div class="break-keep">
 			{{
 				entries := make([]*types.AOCUserLB, 0, len(data))

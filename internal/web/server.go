@@ -78,6 +78,7 @@ func InitServer(config ServerConfig, db *database.DatabaseInst) *Server {
 	s.App.Post("/usermodifiers", s.HandleUserModifiersPost)
 	s.App.Patch("/usermodifiers", s.HandleUserModifiersPatch)
 	s.App.Delete("/usermodifiers", s.HandleUserModifiersDelete)
+	s.App.Get("/leaderboard", s.HandleLeaderboard)
 	s.App.Get("/", s.HandleRoot)
 
 	s.App.Listen(fmt.Sprintf(":%d", s.config.Port))
@@ -87,12 +88,6 @@ func InitServer(config ServerConfig, db *database.DatabaseInst) *Server {
 func (s *Server) HandleRoot(c *fiber.Ctx) error {
 	sess, err := s.store.Get(c)
 	if err != nil {
-		return c.SendStatus(http.StatusInternalServerError)
-	}
-
-	data, err := s.db.GetLeaderboard("2024")
-	if err != nil {
-		log.Println(err)
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
@@ -118,9 +113,17 @@ logged_out:
 	return s.Render(c, templates.LandingPage(
 		loginWidget,
 		loggedIn,
-		data,
-		25,
 	))
+}
+
+func (s *Server) HandleLeaderboard(c *fiber.Ctx) error {
+	data, err := s.db.GetLeaderboard("2024")
+	if err != nil {
+		log.Println(err)
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return s.Render(c, templates.AOCLeaderboard(data, fetcher.EstimateAOCDayCount(s.config.Year)))
 }
 
 func (s *Server) HandleOAuthRedir(c *fiber.Ctx) error {
@@ -503,6 +506,7 @@ func (s *Server) HandleUserModifiersPatch(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
+	c.Set("HX-Trigger", "refresh-leaderboard")
 	return s.Render(c, templates.OOBUpdateUserModifier(newSubmission, templates.UserModifierForm(modifiers, nil, dayCount, "")))
 }
 
@@ -571,6 +575,8 @@ func (s *Server) HandleUserModifiersPost(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
+	c.Set("HX-Trigger", "refresh-leaderboard")
+
 	return s.Render(c, templates.OOBAppendUserModifier(submission, templates.UserModifierForm(modifiers, nil, dayCount, "")))
 }
 
@@ -613,6 +619,7 @@ func (s *Server) HandleUserModifiersDelete(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
+	c.Set("HX-Trigger", "refresh-leaderboard")
 	c.Status(http.StatusOK)
 	return c.SendString("")
 }

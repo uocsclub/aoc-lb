@@ -7,7 +7,7 @@ import (
 	"uocsclub.net/aoclb/internal/types"
 )
 
-templ LandingPage(loginWidget templ.Component, loggedIn bool, leaderboardData types.AOCData, daycount int) {
+templ LandingPage(loginWidget templ.Component, loggedIn bool) {
 	<div class="nav sticky bg-[#0f0f23] top-0 left-0 right-0 flex flex-row p-2">
 		<span class="flex flex-row gap-4 self-start mr-auto">
 			<a hx-boost="true" href="/">Home</a>
@@ -21,7 +21,7 @@ templ LandingPage(loginWidget templ.Component, loggedIn bool, leaderboardData ty
 		if loggedIn {
 			<span hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-get="/usermodifiers"></span>
 		}
-		@AOCLeaderboard(leaderboardData, daycount)
+		<span hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-get="/leaderboard"></span>
 	</div>
 }
 
@@ -106,7 +106,7 @@ templ UserModifier(modifier *types.AOCUserSubmission) {
 			hx-swap="outerHTML"
 		>Delete</button>
 		<span class="col-span-5">
-			<a class="ml-5" href={ modifier.SubmissionUrl } target="_blank">{modifier.SubmissionUrl}</a>
+			<a class="ml-5" href={ modifier.SubmissionUrl } target="_blank">{ modifier.SubmissionUrl }</a>
 		</span>
 	</li>
 }
