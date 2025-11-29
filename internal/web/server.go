@@ -74,6 +74,7 @@ func InitServer(config ServerConfig, db *database.DatabaseInst) *Server {
 	s.App.Post("/oauth2", s.HandleOauthLink)
 	s.App.Get("/logout", s.HandleLogout)
 	s.App.Get("/modifiers", s.HandleModifiers)
+	s.App.Get("/about", s.HandleAbout)
 	s.App.Get("/usermodifiers", s.HandleUserModifiersGet)
 	s.App.Post("/usermodifiers", s.HandleUserModifiersPost)
 	s.App.Patch("/usermodifiers", s.HandleUserModifiersPatch)
@@ -374,6 +375,11 @@ func (s *Server) HandleModifiers(c *fiber.Ctx) error {
 	}
 
 	return s.Render(c, templates.ModifiersPage(modifiers))
+}
+
+
+func (s *Server) HandleAbout(c *fiber.Ctx) error {
+	return s.Render(c, templates.About())
 }
 
 type userSubmissionFormBody struct {

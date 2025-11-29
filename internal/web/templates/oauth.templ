@@ -21,10 +21,12 @@ templ OAuthReturn(invalidId bool) {
 	<div class="flex flex-row justify-center p-5">
 		<script> window.history.replaceState({}, "", "/oauth2") </script>
 		<div class="w-200 flex flex-col">
-			<h1 class="text-center text-xl font-bold">Please enter your Advent of Code user id</h1>
+			<h1>Please enter your Advent of Code user id</h1>
 			<p class="my-2">You can get your id by doing the following: </p>
 			<ol class="pl-3 list-decimal list-inside">
-				<li>Log into <a href="https://adventofcode.com">Advent of code</a></li>
+				<li>Log into 
+	<a href="https://adventofcode.com">Advent of code</a>
+ </li>
 				<li>Navigate to your <a href="https://adventofcode.com/settings">Settings</a> </li>
 				<li>Copy the number in your anonymous id (anonymous user #1234567)</li>
 			</ol>
@@ -57,3 +59,4 @@ templ LoggedInWidget(username string) {
 		>Logout</a>
 	</span>
 }
+

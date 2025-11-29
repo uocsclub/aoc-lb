@@ -12,6 +12,7 @@ templ LandingPage(loginWidget templ.Component, loggedIn bool) {
 		<span class="flex flex-row gap-4 self-start mr-auto">
 			<a hx-boost="true" href="/">Home</a>
 			<a hx-boost="true" href="/modifiers">Modifiers</a>
+			<a hx-boost="true" href="/about">About</a>
 		</span>
 		<span class="self-end">
 			@loginWidget
@@ -25,10 +26,14 @@ templ LandingPage(loginWidget templ.Component, loggedIn bool) {
 	</div>
 }
 
-templ ModifiersPage(modifiers []*types.AOCSubmissionModifier) {
+templ BackNavbar() {
 	<div class="nav sticky bg-[#0f0f23] top-0 left-0 right-0 flex flex-row justify-start p-2">
 		<a hx-boost="true" href="/">Back</a>
 	</div>
+}
+
+templ ModifiersPage(modifiers []*types.AOCSubmissionModifier) {
+	@BackNavbar()
 	{{
 		bostedLanguages := []*types.AOCSubmissionModifier{}
 		normieLanguages := []*types.AOCSubmissionModifier{}
@@ -44,9 +49,9 @@ templ ModifiersPage(modifiers []*types.AOCSubmissionModifier) {
 		types.SortSubmissionModifiers(bostedLanguages)
 		types.SortSubmissionModifiers(normieLanguages)
 	}}
-	<h1 class="text-2xl underline pl-10">Currently buffed languages</h1>
+	<h2>Currently buffed languages</h2>
 	@RenderLanguageList(bostedLanguages)
-	<h1 class="text-2xl underline pl-10">Languages intentionally <b>NOT</b> buffed</h1>
+	<h2>Languages intentionally <b>NOT</b> buffed</h2>
 	@RenderLanguageList(normieLanguages)
 }
 
@@ -208,4 +213,80 @@ templ UserModifierForm(allowedModifiers []*types.AOCSubmissionModifier, modifier
 			<small class="text-sm text-red">{ formErr }</small>
 		}
 	</form>
+}
+
+templ About() {
+	@BackNavbar()
+	<div class="flex flex-row justify-center">
+		<div class="w-200 [&_p]:text-left [&_p]:mb-5 mb-25">
+			<h2>What is this leaderboard</h2>
+			<p>
+				We find that Advent of code penalizes people for using weird and niche
+				languages since its only form of score scaling is through time. This
+				leaderboard allows people to use odd languages and still be competitive
+				with other people. This is not a substitute for the official Advent of
+				code leaderboard, this is an addition to it that shows updated scores
+				based on the languages people used for challenges.
+			</p>
+			<b>THIS IS NOT A REPLACEMENT FOR THE OFFICIAL SITE</b>
+			<p>
+				You will need to use the official 
+				<a href="https://adventofcode.com">Advent of code</a>
+				site to get
+				your challenge and submit your solutions
+				You only use this site to submit links to your code (only
+				visible by us) to get bonus points for using esoteric
+				languages. If you are not doing that, then this site is simply
+				a readonly view of the adjusted leaderboard.
+			</p>
+			<h2>How is score calculated?</h2>
+			<p>
+				Different languages have different bonus modifiers they apply
+				to your final score. Let's take a hypothetical language called
+				<b>kodr</b>. The CSClub execs have decided that this language
+				will have a <b>2.5%</b> bonus modifier. If you completed all
+				<b>4</b> stars of days <b>1</b> and <b>2</b> with this language
+				and you got a score of <b>100</b> on the official leaderboard,
+				you would get an additional <b>2.5%</b> { "for" } each use of
+				the language and your new adjusted score on our leaderboard
+				would be <b>110</b>.
+			</p>
+			<p>
+				All modifiers are tallied together and applied to your final score,
+				they are not applied on the points you got for that specific star. If
+				you completed a star with multiple languages, the one with the highest
+				modifier takes priority. You can submit as many language solutions as
+				you want, only the highest one will count. 
+			</p>
+			<h2>What qualifies a language for a modifier</h2>
+			<p>
+				We want to reward people for getting out of their comfort zone, so if the
+				language is counterintuitive or different form mainstream paradigms, we
+				gave it a buff. Things like <b>SQL</b> or <b>BASH</b> are not at all
+				optimized for competitive programing so they get a buff. Languages like
+				<b>Go</b>, <b>C++</b> or <b>ECMAScript</b> are commonly used so they don't
+				get a buff. The only exception is <b>C</b>, because people often avoid it
+				despite it being crucial for most critical systems around us.
+				<br/>
+				<br/>
+				<b>Rust</b> is not getting a buff.
+				<br/>
+				<b>Assembly</b> is too easy to cheat so we sadly cannot include it.
+			</p>
+			<h2>The language I want isn't there</h2>
+			<p>
+				Reach out in the <b>#adventofcode</b> channel and someone will help you.
+			</p>
+			<h2>How are you proctoring the submissions</h2>
+			<p>
+				We will be reviewing the submissions of the winner after the event concludes and making sure that their bonuses are correct.
+			</p>
+			<h2>Can I use my cursor gpt llm?</h2>
+			<p>
+				We have no way of stopping you, however we're hoping that the
+				buffs to odd languages will counteract the presence of
+				vibe-coded solutions. 
+			</p>
+		</div>
+	</div>
 }
