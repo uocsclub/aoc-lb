@@ -118,7 +118,7 @@ logged_out:
 }
 
 func (s *Server) HandleLeaderboard(c *fiber.Ctx) error {
-	data, err := s.db.GetLeaderboard("2024")
+	data, err := s.db.GetLeaderboard(s.config.Year)
 	if err != nil {
 		log.Println(err)
 		return c.SendStatus(http.StatusInternalServerError)
